@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  selenoid:
+    image: aerokube/selenoid:latest
+    ports:
+      - "4444:4444"
+    volumes:
+      - "./selenoid:/etc/selenoid"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    environment:
+      - OVERRIDE_VIDEO_OUTPUT_DIR=$PWD/selenoid/video
+    command: ["-conf", "/etc/selenoid/browsers.json", "-video-output-dir", "/opt/selenoid/video"]
