@@ -8,5 +8,15 @@
         "path": "/"
       }
     }
+  },
+  "firefox": {
+    "default": "latest",
+    "versions": {
+      "latest": {
+        "image": "selenoid/firefox:latest",
+        "port": "7055",
+        "path": "/"
+      }
+    }
   }
 }

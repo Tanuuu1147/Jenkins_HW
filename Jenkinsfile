@@ -22,7 +22,17 @@ pipeline {
                 sh 'docker info || echo "Docker недоступен"'
                 sh 'echo "Запуск Selenoid..."'
                 sh 'docker compose -f docker-compose.selenoid.yml up -d'
-                sh 'sleep 10' // Ждем запуска Selenoid
+                sh '''
+                    echo "Ждем запуска Selenoid..."
+                    for i in {1..30}; do
+                        if curl -s http://localhost:4444/status > /dev/null; then
+                            echo "Selenoid успешно запущен"
+                            break
+                        fi
+                        echo "Ожидание Selenoid... ($i/30)"
+                        sleep 2
+                    done
+                '''
                 sh 'docker ps' // Показываем запущенные контейнеры
             }
         }
@@ -42,7 +52,15 @@ pipeline {
                 sh '''
                     echo "Запуск тестов..."
                     echo "Проверка доступности Selenoid..."
-                    curl -s http://localhost:4444/status || echo "Selenoid недоступен"
+                    if curl -s http://localhost:4444/status > /dev/null; then
+                        echo "Selenoid доступен"
+                    else
+                        echo "Selenoid недоступен"
+                        exit 1
+                    fi
+                    
+                    mkdir -p allure-results
+                    
                     pytest tests/ \\
                         --browser=${params.BROWSER} \\
                         --base-url=${params.OPENCART_URL} \\
@@ -75,14 +93,19 @@ pipeline {
                     if (allureExists == "not found") {
                         echo "Allure commandline not found, installing..."
                         // Устанавливаем Allure если его нет
-                        sh 'wget https://github.com/allure-framework/allure2/releases/download/2.24.0/allure-2.24.0.tgz'
-                        sh 'tar -xzf allure-2.24.0.tgz'
-                        sh 'export PATH=$PATH:./allure-2.24.0/bin'
+                        sh '''
+                            wget https://github.com/allure-framework/allure2/releases/download/2.24.0/allure-2.24.0.tgz
+                            tar -xzf allure-2.24.0.tgz
+                            export PATH=$PATH:$(pwd)/allure-2.24.0/bin
+                            echo "Allure установлен"
+                        '''
                     }
                     
                     // Генерируем отчет
                     sh '''
+                        export PATH=$PATH:$(pwd)/allure-2.24.0/bin
                         if which allure > /dev/null; then
+                            echo "Генерация Allure отчета..."
                             allure generate allure-results --clean -o allure-report || echo "Failed to generate Allure report"
                         else
                             echo "Allure commandline not available, skipping report generation"
