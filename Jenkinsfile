@@ -18,7 +18,7 @@ pipeline {
         
         stage('Setup Selenoid') {
             steps {
-                sh 'docker-compose -f docker-compose.selenoid.yml up -d'
+                sh 'docker compose -f docker-compose.selenoid.yml up -d'
                 sh 'sleep 10' // Ждем запуска Selenoid
             }
         }
@@ -97,7 +97,7 @@ pipeline {
     post {
         always {
             // Останавливаем Selenoid
-            sh 'docker-compose -f docker-compose.selenoid.yml down || true'
+            sh 'docker compose -f docker-compose.selenoid.yml down || true'
             
             // Архивируем отчет Allure
             archiveArtifacts artifacts: 'allure-report/**/*', allowEmptyArchive: true
