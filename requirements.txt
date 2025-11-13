@@ -10,6 +10,7 @@ pluggy==1.6.0
 Pygments==2.19.2
 PySocks==1.7.1
 pytest==8.4.1
+pytest-xdist==3.6.1
 python-dotenv==1.1.1
 requests==2.32.4
 selenium==4.35.0
@@ -23,4 +24,3 @@ webdriver-manager==4.0.2
 websocket-client==1.8.0
 wsproto==1.2.0
 allure-pytest==2.15.0
-
