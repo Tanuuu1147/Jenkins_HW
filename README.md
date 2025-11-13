@@ -13,6 +13,7 @@
 - `selenoid/` - конфигурация браузеров для Selenoid
 - `Jenkinsfile` - pipeline для Jenkins
 - `setup_github_repo.sh` - скрипт для отправки репозитория в GitHub
+<<<<<<< HEAD
 
 ## Запуск тестов локально
 
@@ -130,3 +131,5 @@ docker-compose -f docker-compose.jenkins.yml down
    - Браузер
    - Версия браузера
    - Количество потоков
+=======
+>>>>>>> fb1c18b5c5c633e33826e3d26981230a27151898
