@@ -2,8 +2,8 @@ pipeline {
     agent any
     
     parameters {
-        string(name: 'SELENOID_URL', defaultValue: 'http://selenoid:4444/wd/hub', description: 'Адрес Selenoid executor')
-        string(name: 'OPENCART_URL', defaultValue: 'http://opencart:8080', description: 'Адрес приложения Opencart')
+        string(name: 'SELENOID_URL', defaultValue: 'http://localhost:4444/wd/hub', description: 'Адрес Selenoid executor')
+        string(name: 'OPENCART_URL', defaultValue: 'http://localhost:8080', description: 'Адрес приложения Opencart')
         choice(name: 'BROWSER', choices: ['chrome', 'firefox'], description: 'Браузер для тестирования')
         string(name: 'BROWSER_VERSION', defaultValue: 'latest', description: 'Версия браузера')
         string(name: 'THREAD_COUNT', defaultValue: '1', description: 'Количество потоков')
@@ -18,26 +18,37 @@ pipeline {
         
         stage('Setup Selenoid') {
             steps {
+                sh 'echo "Проверка доступности Docker..."'
+                sh 'docker info || echo "Docker недоступен"'
+                sh 'echo "Запуск Selenoid..."'
                 sh 'docker compose -f docker-compose.selenoid.yml up -d'
                 sh 'sleep 10' // Ждем запуска Selenoid
+                sh 'docker ps' // Показываем запущенные контейнеры
             }
         }
         
         stage('Install Dependencies') {
             steps {
+                sh 'echo "Установка зависимостей..."'
                 sh 'pip install -r requirements.txt'
+                sh 'echo "Проверка установленных пакетов..."'
+                sh 'pip list | grep pytest-xdist || echo "pytest-xdist не найден"'
+                sh 'echo "Зависимости успешно установлены"'
             }
         }
         
         stage('Run Tests') {
             steps {
-                sh """
-                    pytest tests/ \
-                        --browser=${params.BROWSER} \
-                        --base-url=${params.OPENCART_URL} \
-                        -n ${params.THREAD_COUNT} \
+                sh '''
+                    echo "Запуск тестов..."
+                    echo "Проверка доступности Selenoid..."
+                    curl -s http://localhost:4444/status || echo "Selenoid недоступен"
+                    pytest tests/ \\
+                        --browser=${params.BROWSER} \\
+                        --base-url=${params.OPENCART_URL} \\
+                        -n ${params.THREAD_COUNT} \\
                         --alluredir=allure-results || true
-                """
+                '''
             }
             post {
                 always {
@@ -97,10 +108,22 @@ pipeline {
     post {
         always {
             // Останавливаем Selenoid
+            sh 'echo "Остановка Selenoid..."'
             sh 'docker compose -f docker-compose.selenoid.yml down || true'
             
             // Архивируем отчет Allure
             archiveArtifacts artifacts: 'allure-report/**/*', allowEmptyArchive: true
+            
+            // Публикуем Allure-отчёт
+            script {
+                allure([
+                    includeProperties: false,
+                    jdk: '',
+                    properties: [],
+                    reportBuildPolicy: 'ALWAYS',
+                    results: [[path: 'allure-results']]
+                ])
+            }
         }
     }
 }
